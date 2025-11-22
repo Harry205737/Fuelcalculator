@@ -3,25 +3,37 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fuel Calculator + Log</title>
+<title>Fuel Tracker Pro</title>
 <style>
-  body{font-family:Arial;margin:0;padding:20px;background:#f6f6f6;color:#222}
-  .card{background:#fff;padding:20px;border-radius:12px;max-width:600px;margin:0 auto 20px;box-shadow:0 3px 8px rgba(0,0,0,0.1)}
-  h1,h2{text-align:center;margin:0 0 12px;color:#c00}
+  body{font-family:Arial;margin:0;padding:20px;background:#f2f2f2;color:#222}
+  .card{background:#fff;padding:20px;border-radius:14px;max-width:650px;margin:0 auto 20px;box-shadow:0 3px 10px rgba(0,0,0,0.12)}
+  h1,h2{text-align:center;margin:0 0 14px;color:#c00}
   input,select,button{width:100%;padding:12px;font-size:16px;border-radius:8px;border:1px solid #ccc;margin-bottom:12px}
-  button{background:#007aff;color:#fff;border:none;cursor:pointer}
-  #resultBox{font-size:22px;font-weight:bold;text-align:center;margin-top:10px}
+  button{background:#007aff;color:#fff;border:none;cursor:pointer;font-size:17px}
+  #resultBox{font-size:24px;font-weight:bold;text-align:center;margin-top:12px}
 </style>
 </head>
 <body>
 
 <div class="card">
-  <h1>Fuel Calculator</h1>
+  <h1>Fuel + Cost Calculator</h1>
+
   <label>Distance (km)</label>
   <input id="dist" type="number" step="0.1">
 
   <label>Litres Used</label>
   <input id="litres" type="number" step="0.1">
+
+  <label>Fuel Type</label>
+  <select id="fuelType">
+    <option value="unleaded">Unleaded</option>
+    <option value="premium">Premium</option>
+    <option value="diesel">Diesel</option>
+    <option value="lpg">LPG</option>
+  </select>
+
+  <label>Fuel Cost per Litre ($)</label>
+  <input id="fuelCost" type="number" step="0.01">
 
   <label>Speedo Inaccuracy (%)</label>
   <input id="spdErr" type="number" step="0.01" value="0">
@@ -31,7 +43,8 @@
 </div>
 
 <div class="card">
-  <h2>Log Entry</h2>
+  <h2>Add to Log</h2>
+
   <label>Drive Type</label>
   <select id="dtype">
     <option value="highway">Highway</option>
@@ -39,12 +52,14 @@
     <option value="combo">Combination</option>
   </select>
 
-  <button id="addLog">Add to Log</button>
+  <button id="addLog">Add Entry</button>
 </div>
 
 <div class="card">
-  <h2>Fuel Usage Graph</h2>
+  <h2>Fuel Usage + Cost Graph</h2>
+
   <canvas id="chart" height="250"></canvas>
+
   <button id="save">Save</button>
   <button id="load">Load</button>
   <button id="clear">Clear</button>
@@ -53,41 +68,84 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 let log=[];
+
 const dist=document.getElementById('dist');
 const litres=document.getElementById('litres');
+const fuelType=document.getElementById('fuelType');
+const fuelCost=document.getElementById('fuelCost');
 const spd=document.getElementById('spdErr');
 const resultBox=document.getElementById('resultBox');
-const chartCtx=document.getElementById('chart').getContext('2d');
 
-const chart=new Chart(chartCtx,{type:'line',data:{labels:[],datasets:[{label:'L/100km',data:[]}]} ,options:{scales:{y:{beginAtZero:true}}}});
+const ctx=document.getElementById('chart').getContext('2d');
+const chart=new Chart(ctx,{
+  type:'line',
+  data:{
+    labels:[],
+    datasets:[
+      {label:'L/100km', data:[], borderWidth:2},
+      {label:'Trip Cost ($)', data:[], borderWidth:2}
+    ]
+  },
+  options:{
+    responsive:true,
+    scales:{y:{beginAtZero:true}}
+  }
+});
 
 function calc(){
   const d=parseFloat(dist.value);
   const l=parseFloat(litres.value);
   const e=parseFloat(spd.value);
-  if(!d||!l){resultBox.textContent='';return;}
-  const trueD=d/(1+e/100);
-  const l100=(l/trueD)*100;
-  resultBox.textContent = l100.toFixed(2)+" L/100km";
-  return l100;
+  const cost=parseFloat(fuelCost.value);
+
+  if(!d || !l){ resultBox.textContent=''; return null; }
+
+  const trueD = d / (1 + e/100);
+  const l100 = (l / trueD) * 100;
+  const tripCost = l * (cost || 0);
+
+  resultBox.textContent = `${l100.toFixed(2)} L/100km — $${tripCost.toFixed(2)}`;
+
+  return { l100, tripCost };
 }
 
-function update(){
-  chart.data.labels=log.map((x,i)=>`${i+1} (${x.type})`);
-  chart.data.datasets[0].data=log.map(x=>x.val);
+document.getElementById('calcBtn').onclick = calc;
+
+document.getElementById('addLog').onclick = ()=>{
+  const result = calc();
+  if(!result) return;
+
+  log.push({
+    type: document.getElementById('dtype').value,
+    fuel: fuelType.value,
+    cost: result.tripCost,
+    val: result.l100
+  });
+
+  updateChart();
+};
+
+function updateChart(){
+  chart.data.labels = log.map((x,i)=> `${i+1} (${x.type})`);
+  chart.data.datasets[0].data = log.map(x=> x.val);
+  chart.data.datasets[1].data = log.map(x=> x.cost);
   chart.update();
 }
 
-document.getElementById('calcBtn').onclick=calc;
-document.getElementById('addLog').onclick=()=>{
-  const v=calc(); if(!v) return;
-  const type=document.getElementById('dtype').value;
-  log.push({val:v,type}); update();
+document.getElementById('save').onclick = ()=>{
+  localStorage.setItem('fuelLog', JSON.stringify(log));
 };
 
-document.getElementById('save').onclick=()=>localStorage.setItem('fuelLog',JSON.stringify(log));
-document.getElementById('load').onclick=()=>{const d=localStorage.getItem('fuelLog'); if(d){log=JSON.parse(d); update();}};
-document.getElementById('clear').onclick=()=>{localStorage.removeItem('fuelLog'); log=[]; update();};
+document.getElementById('load').onclick = ()=>{
+  const d = localStorage.getItem('fuelLog');
+  if(d){ log = JSON.parse(d); updateChart(); }
+};
+
+document.getElementById('clear').onclick = ()=>{
+  localStorage.removeItem('fuelLog');
+  log = [];
+  updateChart();
+};
 </script>
 
 </body>
