@@ -1,187 +1,311 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Fuel Tracker Pro</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Fuel Log — Single File</title>
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-  body{font-family:Arial;margin:0;padding:20px;background:#f2f2f2;color:#222}
-  .card{background:#fff;padding:20px;border-radius:14px;max-width:650px;margin:0 auto 20px;box-shadow:0 3px 10px rgba(0,0,0,0.12)}
-  h1,h2{text-align:center;margin:0 0 14px;color:#c00}
-  input,select,button{width:100%;padding:12px;font-size:16px;border-radius:8px;border:1px solid #ccc;margin-bottom:12px}
-  button{background:#007aff;color:#fff;border:none;cursor:pointer;font-size:17px}
-  #resultBox{font-size:24px;font-weight:bold;text-align:center;margin-top:12px}
+:root{--bg:#f2f5fb;--card:#ffffff;--muted:#6b7280;--accent:#007aff}
+*{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,#f6f9ff 0%,var(--bg) 100%);-webkit-font-smoothing:antialiased}
+.app{max-width:980px;margin:18px auto;padding:16px}
+.header{display:flex;align-items:center;gap:12px}
+.logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#5ac8fa);display:flex;align-items:center;justify-content:center;color:white;font-weight:600}
+.title{font-size:18px;font-weight:600}
+.card{background:var(--card);border-radius:14px;padding:12px;margin-top:12px;box-shadow:0 6px 20px rgba(15,23,42,0.06)}
+.row{display:flex;gap:8px}
+.input{flex:1;min-width:0}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;padding:10px;border-radius:10px;border:1px solid #e6eef9;font-size:14px}
+.btn{background:var(--accent);color:#fff;padding:10px 14px;border-radius:10px;border:none;font-weight:600}
+.small{font-size:13px}
+.table{width:100%;border-collapse:collapse;margin-top:8px}
+.table th,.table td{padding:8px;text-align:left;border-bottom:1px solid #eef3fb;font-size:13px}
+.floatbar{position:fixed;right:12px;left:12px;bottom:12px;background:linear-gradient(90deg,#ffffffcc,#f8fbffcc);backdrop-filter:blur(6px);border-radius:14px;padding:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:0 8px 30px rgba(15,23,42,0.08)}
+.charts{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+@media(min-width:900px){.charts{grid-template-columns:1fr 1fr}}
+.hint{color:var(--muted);font-size:13px}
+.controls{display:flex;gap:8px;flex-wrap:wrap}
+.link{background:transparent;border:1px solid #e2edff;padding:8px;border-radius:10px}
+.footer{margin-top:14px;color:var(--muted);font-size:13px;text-align:center}
 </style>
 </head>
 <body>
+<div class="app">
+  <div class="header">
+    <div class="logo">FL</div>
+    <div>
+      <div class="title">Fuel Log — iOS style (single file)</div>
+      <div class="hint">Save to local storage. CSV import/export. Monthly graphs & speedometer error.</div>
+    </div>
+  </div>
 
-<div class="card">
-  <h1>Fuel + Cost Calculator</h1>
+  <div class="card">
+    <div style="display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-weight:600">New Fill-up</div>
+      <div class="controls">
+        <button class="link" id="importBtn">Import CSV</button>
+        <button class="link" id="exportBtn">Export CSV</button>
+      </div>
+    </div>
 
-  <label>Distance (km)</label>
-  <input id="dist" type="number" step="0.1">
+    <div class="row">
+      <div class="input">
+        <label>Date</label>
+        <input type="date" id="date" />
+      </div>
+      <div class="input">
+        <label>Odometer (km)</label>
+        <input type="number" id="odometer" step="0.1" />
+      </div>
+      <div class="input">
+        <label>Litres</label>
+        <input type="number" id="litres" step="0.01" />
+      </div>
+    </div>
 
-  <label>Litres Used</label>
-  <input id="litres" type="number" step="0.1">
+    <div class="row" style="margin-top:8px">
+      <div class="input">
+        <label>Fuel cost ($ total)</label>
+        <input type="number" id="cost" step="0.01" />
+      </div>
+      <div class="input">
+        <label>Fuel type</label>
+        <select id="fuelType"><option>Unleaded</option><option>Diesel</option><option>Premium</option></select>
+      </div>
+      <div class="input">
+        <label>Speedometer error (%)</label>
+        <input type="number" id="speedError" step="0.1" value="0" />
+      </div>
+    </div>
 
-  <label>Fuel Type</label>
-  <select id="fuelType">
-    <option value="unleaded">Unleaded</option>
-    <option value="premium">Premium</option>
-    <option value="diesel">Diesel</option>
-    <option value="lpg">LPG</option>
-  </select>
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+      <button class="btn" id="addBtn">Add Fill-up</button>
+      <button class="link" id="clearBtn">Clear All</button>
+      <div style="margin-left:auto" class="hint small">Last cost will prefill on next entry.</div>
+    </div>
+  </div>
 
-  <label>Fuel Cost per Litre ($)</label>
-  <input id="fuelCost" type="number" step="0.01">
+  <div class="card" id="entriesCard">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-weight:600">Entries</div>
+      <div class="hint small">Tap an entry row to delete it.</div>
+    </div>
+    <table class="table" id="entriesTable">
+      <thead><tr><th>Date</th><th>Odo</th><th>Litres</th><th>Cost</th><th>Fuel</th><th>Distance</th><th>L/100km</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  <label>Speedo Inaccuracy (%)</label>
-  <input id="spdErr" type="number" step="0.01" value="0">
+  <div class="charts">
+    <div class="card">
+      <div style="font-weight:600">Monthly Fuel Cost & Distance</div>
+      <canvas id="costChart" height="200"></canvas>
+    </div>
 
-  <div id="resultBox"></div>
-  <button id="calcBtn">Calculate</button>
+    <div class="card">
+      <div style="font-weight:600">Monthly Average L/100km</div>
+      <canvas id="usageChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <div class="footer">Single-file fuel log. Uses localStorage. Works offline after initial load.</div>
 </div>
 
-<div class="card">
-  <h2>Add to Log</h2>
-
-  <label>Drive Type</label>
-  <select id="dtype">
-    <option value="highway">Highway</option>
-    <option value="city">City</option>
-    <option value="combo">Combination</option>
-  </select>
-
-  <button id="addLog">Add Entry</button>
+<div class="floatbar" id="floatbar">
+  <div>
+    <div style="font-weight:700" id="monthLabel">This Month</div>
+    <div class="hint small" id="monthSummary">Distance: 0 km · Fuel: 0 L · Avg: 0 L/100km · Cost: $0</div>
+  </div>
+  <div style="display:flex;gap:8px">
+    <button class="link" id="showAll">Show All</button>
+    <button class="btn" id="addQuick">Quick Add</button>
+  </div>
 </div>
 
-<div class="card">
-  <h2>Fuel Usage + Cost Graph</h2>
-
-  <canvas id="chart" height="250"></canvas>
-
-  <button id="save">Save</button>
-  <button id="load">Load</button>
-  <button id="clear">Clear</button>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js">// CSV export
-function exportCSV(){
-  if(log.length===0) return;
-  let csv = 'Entry,Drive Type,Fuel Type,L/100km,Trip Cost ($)
-';
-  log.forEach((e,i)=>{
-    csv += `${i+1},${e.type},${e.fuel},${e.val.toFixed(2)},${e.cost.toFixed(2)}
-`;
-  });
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'fuel_log.csv';
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// Save fuel cost for next time
-const savedCost = localStorage.getItem('lastFuelCost');
-if(savedCost) fuelCost.value = savedCost;
-
-fuelCost.addEventListener('input', ()=>{
-  localStorage.setItem('lastFuelCost', fuelCost.value);
-});
-
-document.getElementById('clear').insertAdjacentHTML('afterend', '<button id="export">Export CSV</button>');
-document.getElementById('export').onclick = exportCSV;
-
-</script>
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-let log=[];
+// --- Data model & persistence ---
+const STORAGE_KEY = 'fuelLog.entries.v1';
+let entries = loadEntries();
 
-const dist=document.getElementById('dist');
-const litres=document.getElementById('litres');
-const fuelType=document.getElementById('fuelType');
-const fuelCost=document.getElementById('fuelCost');
-const spd=document.getElementById('spdErr');
-const resultBox=document.getElementById('resultBox');
+function loadEntries(){
+  try{const raw = localStorage.getItem(STORAGE_KEY); return raw? JSON.parse(raw): []}catch(e){return []}
+}
+function saveEntries(){localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));}
 
-const ctx=document.getElementById('chart').getContext('2d');
-const chart=new Chart(ctx,{
-  type:'line',
-  data:{
-    labels:[],
-    datasets:[
-      {label:'L/100km', data:[], borderWidth:2},
-      {label:'Trip Cost ($)', data:[], borderWidth:2}
-    ]
-  },
-  options:{
-    responsive:true,
-    scales:{y:{beginAtZero:true}}
+// --- Utilities ---
+function fmt(n,dec=2){return Number(n||0).toFixed(dec)}
+function parseDate(s){return s? new Date(s+'T00:00:00') : new Date()}
+function monthKey(date){const d=new Date(date);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
+
+// --- Calculations ---
+function computeStats(list, speedErrorPct=0){
+  // entries assumed sorted by date ascending
+  let lastOdo = null; let rows=[];
+  for(const e of list){
+    let odo = Number(e.odometer);
+    let litres = Number(e.litres);
+    let cost = Number(e.cost||0);
+    let distance = (lastOdo===null)?0:Math.max(0, odo - lastOdo);
+    // apply speedometer error (percentage): if speedometer reads higher than true, distance reduces? We'll apply as adjustment: trueDistance = distance * (1 + speedErrorPct/100)
+    const entryError = ('speedError' in e) ? Number(e.speedError) : speedErrorPct;
+    const adjDistance = distance * (1 + Number(entryError)/100);
+    const l100 = (adjDistance>0)? (litres/adjDistance*100) : 0;
+    rows.push({...e, distance:adjDistance, l100});
+    lastOdo = odo;
   }
+  return rows;
+}
+
+// --- UI rendering ---
+const tbody = document.querySelector('#entriesTable tbody');
+const dateInput = document.getElementById('date');
+const odoInput = document.getElementById('odometer');
+const litresInput = document.getElementById('litres');
+const costInput = document.getElementById('cost');
+const fuelTypeInput = document.getElementById('fuelType');
+const speedErrorInput = document.getElementById('speedError');
+const monthLabel = document.getElementById('monthLabel');
+const monthSummary = document.getElementById('monthSummary');
+
+// prefill date to today
+dateInput.valueAsDate = new Date();
+
+function renderTable(){
+  entries.sort((a,b)=> new Date(a.date)-new Date(b.date));
+  const globalErr = Number(speedErrorInput.value||0);
+  const rows = computeStats(entries, globalErr);
+  tbody.innerHTML='';
+  for(let i=0;i<rows.length;i++){
+    const r = rows[i];
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.date}</td><td>${fmt(r.odometer,1)}</td><td>${fmt(r.litres,2)}</td><td>$${fmt(r.cost,2)}</td><td>${r.fuelType||''}</td><td>${fmt(r.distance,1)}</td><td>${r.distance>0?fmt(r.l100,2):'-'}</td>`;
+    tr.addEventListener('click',()=>{if(confirm('Delete this entry?')){entries.splice(i,1); saveEntries(); renderAll();}});
+    tbody.appendChild(tr);
+  }
+  renderSummaryAndCharts(rows);
+}
+
+// --- Monthly aggregation & charts ---
+let costChart, usageChart;
+function aggregateByMonth(rows){
+  const map = {};
+  let lastOdo = null;
+  for(const r of rows){
+    const key = monthKey(r.date);
+    if(!map[key])map[key]={litres:0,distance:0,cost:0,rows:[]};
+    map[key].litres += Number(r.litres);
+    map[key].distance += Number(r.distance);
+    map[key].cost += Number(r.cost||0);
+    map[key].rows.push(r);
+  }
+  const keys = Object.keys(map).sort();
+  const months = keys.map(k=>k);
+  const litres = keys.map(k=>map[k].litres);
+  const distances = keys.map(k=>map[k].distance);
+  const costs = keys.map(k=>map[k].cost);
+  const avgL100 = keys.map(k=> map[k].distance>0 ? (map[k].litres/map[k].distance*100) : 0);
+  return {months,litres,distances,costs,avgL100, map};
+}
+
+function renderSummaryAndCharts(rows){
+  const agg = aggregateByMonth(rows);
+  // update floatbar for current month
+  const nowKey = monthKey(new Date());
+  const cur = agg.map[nowKey] || {litres:0,distance:0,cost:0};
+  monthLabel.textContent = new Date().toLocaleString(undefined,{month:'long',year:'numeric'});
+  const avg = cur.distance>0 ? (cur.litres/cur.distance*100) : 0;
+  monthSummary.textContent = `Distance: ${fmt(cur.distance,1)} km · Fuel: ${fmt(cur.litres,2)} L · Avg: ${fmt(avg,2)} L/100km · Cost: $${fmt(cur.cost,2)}`;
+
+  // charts
+  const labels = agg.months.map(m=>{const [y,mm]=m.split('-');return `${mm}/${y}`});
+  const costData = agg.costs;
+  const distData = agg.distances;
+  const avgData = agg.avgL100;
+
+  if(!costChart){
+    const ctx = document.getElementById('costChart').getContext('2d');
+    costChart = new Chart(ctx,{
+      type:'bar',
+      data:{labels, datasets:[{label:'Cost ($)', data:costData, yAxisID:'y'},{label:'Distance (km)', data:distData, type:'line', yAxisID:'y1'}]},
+      options:{interaction:{mode:'index'},scales:{y:{position:'left'}, y1:{position:'right',grid:{display:false}}}
+    });
+  } else {
+    costChart.data.labels = labels; costChart.data.datasets[0].data = costData; costChart.data.datasets[1].data = distData; costChart.update();
+  }
+
+  if(!usageChart){
+    const ctx2 = document.getElementById('usageChart').getContext('2d');
+    usageChart = new Chart(ctx2,{type:'line',data:{labels, datasets:[{label:'Avg L/100km', data:avgData, fill:true}]},options:{interaction:{mode:'index'}});
+  } else {
+    usageChart.data.labels = labels; usageChart.data.datasets[0].data = avgData; usageChart.update();
+  }
+}
+
+// --- Actions ---
+document.getElementById('addBtn').addEventListener('click',()=>{
+  addEntry(false);
 });
 
-function calc(){
-  const d=parseFloat(dist.value);
-  const l=parseFloat(litres.value);
-  const e=parseFloat(spd.value);
-  const cost=parseFloat(fuelCost.value);
+document.getElementById('addQuick').addEventListener('click',()=>{addEntry(true)});
 
-  if(!d || !l){ resultBox.textContent=''; return null; }
-
-  const trueD = d / (1 + e/100);
-  const l100 = (l / trueD) * 100;
-  const tripCost = l * (cost || 0);
-
-  resultBox.textContent = `${l100.toFixed(2)} L/100km — $${tripCost.toFixed(2)}`;
-
-  return { l100, tripCost };
+function addEntry(quick=false){
+  const date = dateInput.value || new Date().toISOString().slice(0,10);
+  const odometer = Number(odoInput.value||0);
+  const litres = Number(litresInput.value||0);
+  const cost = Number(costInput.value||0);
+  const fuelType = fuelTypeInput.value;
+  const speedError = Number(speedErrorInput.value||0);
+  if(!odometer || !litres){
+    if(!quick){ alert('Please enter odometer and litres.'); return; }
+  }
+  const entry = {date, odometer, litres, cost, fuelType, speedError};
+  entries.push(entry);
+  // save last known cost to localStorage for prefill
+  if(cost>0) localStorage.setItem('fuelLog.lastCost', String(cost));
+  saveEntries(); renderAll();
+  // prefill next: set litres and cost cleared, odometer left
+  litresInput.value=''; costInput.value = localStorage.getItem('fuelLog.lastCost')||'';
 }
 
-document.getElementById('calcBtn').onclick = calc;
+document.getElementById('clearBtn').addEventListener('click',()=>{if(confirm('Clear all entries?')){entries=[];saveEntries();renderAll();}});
 
-document.getElementById('addLog').onclick = ()=>{
-  const result = calc();
-  if(!result) return;
+document.getElementById('exportBtn').addEventListener('click',exportCSV);
 
-  log.push({
-    type: document.getElementById('dtype').value,
-    fuel: fuelType.value,
-    cost: result.tripCost,
-    val: result.l100
-  });
+document.getElementById('importBtn').addEventListener('click',()=>{const inp = document.createElement('input'); inp.type='file'; inp.accept='.csv'; inp.onchange=e=>{const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=ev=>{try{parseCSV(ev.target.result);}catch(err){alert('Invalid CSV');}}; r.readAsText(f);} ; inp.click();});
 
-  updateChart();
-};
-
-function updateChart(){
-  chart.data.labels = log.map((x,i)=> `${i+1} (${x.type})`);
-  chart.data.datasets[0].data = log.map(x=> x.val);
-  chart.data.datasets[1].data = log.map(x=> x.cost);
-  chart.update();
+function exportCSV(){
+  let csv = 'date,odometer,litres,cost,fuelType,speedError\n';
+  entries.forEach(e=>{csv+=`${e.date},${e.odometer},${e.litres},${e.cost},${e.fuelType||''},${e.speedError||0}\n`});
+  const blob = new Blob([csv],{type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='fuel-log.csv'; a.click(); URL.revokeObjectURL(url);
 }
 
-document.getElementById('save').onclick = ()=>{
-  localStorage.setItem('fuelLog', JSON.stringify(log));
-};
+function parseCSV(text){
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  const cols = lines.shift().split(',').map(s=>s.trim());
+  const newEntries = lines.map(l=>{const parts=l.split(','); const obj={}; cols.forEach((c,i)=>obj[c]=parts[i]||'' ); return {date:obj.date||'', odometer:Number(obj.odometer||0), litres:Number(obj.litres||0), cost:Number(obj.cost||0), fuelType:obj.fuelType||'', speedError:Number(obj.speedError||0)} });
+  entries = entries.concat(newEntries);
+  saveEntries(); renderAll();
+}
 
-document.getElementById('load').onclick = ()=>{
-  const d = localStorage.getItem('fuelLog');
-  if(d){ log = JSON.parse(d); updateChart(); }
-};
+function renderAll(){ renderTable(); }
 
-document.getElementById('clear').onclick = ()=>{
-  localStorage.removeItem('fuelLog');
-  log = [];
-  updateChart();
-};
+// init prefill last cost
+costInput.value = localStorage.getItem('fuelLog.lastCost') || '';
+// update when speed error changes
+speedErrorInput.addEventListener('change',()=>{renderAll()});
+
+// show all button scrolls to entries
+document.getElementById('showAll').addEventListener('click',()=>{document.getElementById('entriesCard').scrollIntoView({behavior:'smooth'})});
+
+// initial render
+renderAll();
 </script>
-
-<div id="bottomBar" style="position:fixed;bottom:0;left:0;width:100%;background:#fff;padding:10px 0;border-top:1px solid #ccc;box-shadow:0 -2px 6px rgba(0,0,0,0.1);display:flex;justify-content:space-around;z-index:999;">
-  <button onclick="alert('Monthly fuel usage coming soon!')">Monthly Usage</button>
-  <button onclick="alert('Statistics coming soon!')">Stats</button>
-  <button onclick="alert('Settings coming soon!')">Settings</button>
-</div>
-
 </body>
 </html>
