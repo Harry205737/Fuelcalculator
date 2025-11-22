@@ -65,7 +65,34 @@
   <button id="clear">Clear</button>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js">// CSV export
+function exportCSV(){
+  if(log.length===0) return;
+  let csv = 'Entry,Drive Type,Fuel Type,L/100km,Trip Cost ($)\n';
+  log.forEach((e,i)=>{
+    csv += `${i+1},${e.type},${e.fuel},${e.val.toFixed(2)},${e.cost.toFixed(2)}\n`;
+  });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'fuel_log.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// Save fuel cost for next time
+const savedCost = localStorage.getItem('lastFuelCost');
+if(savedCost) fuelCost.value = savedCost;
+
+fuelCost.addEventListener('input', ()=>{
+  localStorage.setItem('lastFuelCost', fuelCost.value);
+});
+
+document.getElementById('clear').insertAdjacentHTML('afterend', '<button id="export">Export CSV</button>');
+document.getElementById('export').onclick = exportCSV;
+
+</script>
 <script>
 let log=[];
 
