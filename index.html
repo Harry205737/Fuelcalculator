@@ -1,232 +1,94 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Calculate Litres Per 100km</title>
-  <style>
-    /* Page layout */
-    :root{--blue:#007aff;--bg:#ffffff}
-    html,body{height:100%;margin:0;font-family:Arial, Helvetica, sans-serif;background:var(--bg);-webkit-font-smoothing:antialiased}
-    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:30px}
-
-    /* Card */
-    .card{width:860px;max-width:95%;background:transparent;text-align:left}
-
-    /* Header */
-    h1{color:#d60000;font-size:48px;margin:6px 0 6px 0;text-align:center;font-weight:700}
-    p.lead{font-size:18px;text-align:center;margin-top:0;margin-bottom:26px}
-
-    /* Form grid */
-    .form{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:center}
-    .labels{padding-left:18px}
-    .labels div{font-size:20px;padding:18px 0}
-    .inputs{display:flex;flex-direction:column;gap:12px;align-items:flex-end}
-
-    input[type="number"], .result{width:240px;padding:12px 14px;border-radius:10px;border:2px solid #cfcfcf;font-size:18px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.6)}
-    .result{display:inline-block;background:transparent;border:none;font-weight:700;text-align:right;font-size:28px}
-
-    /* Buttons */
-    .buttons{display:flex;gap:18px;justify-content:center;margin-top:26px}
-    button{background:var(--blue);color:white;border:none;padding:12px 22px;border-radius:22px;font-size:18px;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,0.08);}
-    button.reset{background:#1e90ff}
-
-    /* Small helper text */
-    .small{font-size:13px;color:#444;margin-top:6px}
-
-    /* Reference screenshot */
-    .screenshot{margin-top:26px;text-align:center}
-    .screenshot img{max-width:360px;border:6px solid #fff;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12)}
-
-    /* Responsive */
-    @media (max-width:720px){
-      .form{grid-template-columns:1fr;}
-      .labels{text-align:left;padding-left:0}
-      .inputs{align-items:stretch}
-      input[type="number"]{width:100%}
-      .result{width:100%;text-align:left}
-    }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Fuel Calculator + Log</title>
+<style>
+  body{font-family:Arial;margin:0;padding:20px;background:#f6f6f6;color:#222}
+  .card{background:#fff;padding:20px;border-radius:12px;max-width:600px;margin:0 auto 20px;box-shadow:0 3px 8px rgba(0,0,0,0.1)}
+  h1,h2{text-align:center;margin:0 0 12px;color:#c00}
+  input,select,button{width:100%;padding:12px;font-size:16px;border-radius:8px;border:1px solid #ccc;margin-bottom:12px}
+  button{background:#007aff;color:#fff;border:none;cursor:pointer}
+  #resultBox{font-size:22px;font-weight:bold;text-align:center;margin-top:10px}
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card" role="main">
-      <h1>Calculate Litres Per 100km</h1>
-      <p class="lead">(Use Litres/100km to determine petrol cost — the speedometer inaccuracy adjusts the distance.)</p>
 
-      <div class="form" aria-labelledby="fuelform">
-        <div class="labels" id="fuelform">
-          <div>Distance in km:</div>
-          <div>Petrol used in litres:</div>
-          <div>Speedometer inaccuracy (%):</div>
-          <div>Adjusted distance (true km):</div>
-          <div>Litres per 100km:</div>
-        </div>
+<div class="card">
+  <h1>Fuel Calculator</h1>
+  <label>Distance (km)</label>
+  <input id="dist" type="number" step="0.1">
 
-        <div class="inputs">
-          <input id="distance" type="number" step="0.1" placeholder="e.g. 168.7" value="168.7" />
-          <input id="litres" type="number" step="0.01" placeholder="e.g. 25.5" value="25.5" />
+  <label>Litres Used</label>
+  <input id="litres" type="number" step="0.1">
 
-          <!-- Explanation: positive = speedometer reads higher than reality (overstates) -->
-          <input id="speedError" type="number" step="0.01" placeholder="e.g. 4.76" value="0" />
+  <label>Speedo Inaccuracy (%)</label>
+  <input id="spdErr" type="number" step="0.01" value="0">
 
-          <div style="display:flex;gap:12px;align-items:center;width:100%;justify-content:flex-end">
-            <input id="adjDistance" class="result" readonly aria-readonly="true" value="168.7 km" />
-          </div>
+  <div id="resultBox"></div>
+  <button id="calcBtn">Calculate</button>
+</div>
 
-          <div style="display:flex;gap:12px;align-items:center;width:100%;justify-content:flex-end">
-            <span id="result" class="result">15.12</span>
-          </div>
-        </div>
-      </div>
+<div class="card">
+  <h2>Log Entry</h2>
+  <label>Drive Type</label>
+  <select id="dtype">
+    <option value="highway">Highway</option>
+    <option value="city">City</option>
+    <option value="combo">Combination</option>
+  </select>
 
-      <div class="small" style="text-align:center">
-        <strong>Speedometer inaccuracy</strong> — enter the percentage that the speedo is higher (+) or lower (−) than the true speed. For example, if your speedo reads 110 km/h but your true speed is 105 km/h, enter <em>4.76</em>.
-      </div>
+  <button id="addLog">Add to Log</button>
+</div>
 
-      <div class="buttons">
-        <button id="calc">Submit!</button>
-        <button id="reset" class="reset">Reset</button>
-      </div>
+<div class="card">
+  <h2>Fuel Usage Graph</h2>
+  <canvas id="chart" height="250"></canvas>
+  <button id="save">Save</button>
+  <button id="load">Load</button>
+  <button id="clear">Clear</button>
+</div>
 
-      <div class="screenshot">
-        <img src="/mnt/data/84FAE7E0-BF8E-4A4C-A0DC-3694B63933DC.jpeg" alt="reference screenshot" />
-      </div>
-    </div>
-  </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let log=[];
+const dist=document.getElementById('dist');
+const litres=document.getElementById('litres');
+const spd=document.getElementById('spdErr');
+const resultBox=document.getElementById('resultBox');
+const chartCtx=document.getElementById('chart').getContext('2d');
 
-  <script>
-    // Utility: format number to fixed but trim trailing zeros
-    function fmt(n, dp){
-      return Number.isFinite(n) ? parseFloat(n.toFixed(dp)).toString() : "-";
-    }
+const chart=new Chart(chartCtx,{type:'line',data:{labels:[],datasets:[{label:'L/100km',data:[]}]} ,options:{scales:{y:{beginAtZero:true}}}});
 
-    const distanceEl = document.getElementById('distance');
-    const litresEl = document.getElementById('litres');
-    const speedEl = document.getElementById('speedError');
-    const adjDistanceEl = document.getElementById('adjDistance');
-    const resultEl = document.getElementById('result');
-    const calcBtn = document.getElementById('calc');
-    const resetBtn = document.getElementById('reset');
+function calc(){
+  const d=parseFloat(dist.value);
+  const l=parseFloat(litres.value);
+  const e=parseFloat(spd.value);
+  if(!d||!l){resultBox.textContent='';return;}
+  const trueD=d/(1+e/100);
+  const l100=(l/trueD)*100;
+  resultBox.textContent = l100.toFixed(2)+" L/100km";
+  return l100;
+}
 
-    function calculate(){
-      const d = parseFloat(distanceEl.value);
-      const l = parseFloat(litresEl.value);
-      const err = parseFloat(speedEl.value);
+function update(){
+  chart.data.labels=log.map((x,i)=>`${i+1} (${x.type})`);
+  chart.data.datasets[0].data=log.map(x=>x.val);
+  chart.update();
+}
 
-      if(!Number.isFinite(d) || d <= 0 || !Number.isFinite(l) || l < 0){
-        resultEl.textContent = '-';
-        adjDistanceEl.value = '-';
-        return;
-      }
+document.getElementById('calcBtn').onclick=calc;
+document.getElementById('addLog').onclick=()=>{
+  const v=calc(); if(!v) return;
+  const type=document.getElementById('dtype').value;
+  log.push({val:v,type}); update();
+};
 
-      // Interpretation: speedometer inaccuracy = percentage that the speedometer reading is
-      // higher (+) or lower (−) than the true speed. So if speedo overstates by 4.76%,
-      // the true (actual) distance is: true = indicated / (1 + err/100).
-      // Conversely, if err is negative, speedo understates and true distance is larger.
-      const trueDistance = d / (1 + (isFinite(err) ? err/100 : 0));
-
-      // Litres per 100km: (litres / trueDistance) * 100
-      const lPer100 = (l / trueDistance) * 100;
-
-      adjDistanceEl.value = fmt(trueDistance,2) + ' km';
-      resultEl.textContent = fmt(lPer100,2);
-
-      // show a small note when speedometer caused a meaningful change
-      // (not shown visually, but retained in values)
-    }
-
-    calcBtn.addEventListener('click', function(e){ e.preventDefault(); calculate(); });
-    resetBtn.addEventListener('click', function(e){ e.preventDefault();
-      distanceEl.value = '';
-      litresEl.value = '';
-      speedEl.value = '0';
-      adjDistanceEl.value = '';
-      resultEl.textContent = '';
-    });
-
-    // calculate on input change for live feel
-    [distanceEl, litresEl, speedEl].forEach(el => el.addEventListener('input', calculate));
-
-    // initial calc
-    calculate();
-  </script>
-  <!-- Data graph and controls -->
-  <div class="card" style="margin-top:40px;">
-    <h2 style="text-align:center;color:#333;">Fuel Usage Log & Graph</h2>
-    <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;margin-bottom:20px;">
-      <input id="logDistance" type="number" step="0.1" placeholder="Distance (km)" />
-      <input id="logLitres" type="number" step="0.1" placeholder="Litres used" />
-      <select id="logType">
-        <option value="highway">Highway</option>
-        <option value="city">City/Town</option>
-        <option value="combination">Combination</option>
-      </select>
-      <button id="addEntry">Add Entry</button>
-    </div>
-
-    <canvas id="fuelChart" width="600" height="320" style="max-width:100%;"></canvas>
-
-    <div style="text-align:center;margin-top:20px;">
-      <button id="saveData">Save to Local Storage</button>
-      <button id="loadData">Load Saved Data</button>
-      <button id="clearData">Clear Saved Data</button>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    let logData = [];
-
-    const ctx = document.getElementById('fuelChart').getContext('2d');
-    const chart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [],
-        datasets: [{
-          label: 'L/100km',
-          data: [],
-          fill: false,
-          borderWidth: 2,
-        }]
-      },
-      options: {
-        responsive: true,
-        scales: { y: { beginAtZero: true } }
-      }
-    });
-
-    function updateChart() {
-      chart.data.labels = logData.map((e, i) => `${i+1} (${e.type})`);
-      chart.data.datasets[0].data = logData.map(e => e.l100);
-      chart.update();
-    }
-
-    function addEntry(){
-      const d = parseFloat(document.getElementById('logDistance').value);
-      const l = parseFloat(document.getElementById('logLitres').value);
-      const type = document.getElementById('logType').value;
-      if(!d || !l) return;
-      const l100 = (l / d) * 100;
-      logData.push({ distance: d, litres: l, type, l100 });
-      updateChart();
-    }
-
-    document.getElementById('addEntry').onclick = addEntry;
-    document.getElementById('saveData').onclick = () => {
-      localStorage.setItem('fuelLog', JSON.stringify(logData));
-      alert('Saved!');
-    };
-    document.getElementById('loadData').onclick = () => {
-      const saved = localStorage.getItem('fuelLog');
-      if(saved) { logData = JSON.parse(saved); updateChart(); }
-    };
-    document.getElementById('clearData').onclick = () => {
-      localStorage.removeItem('fuelLog');
-      logData = [];
-      updateChart();
-    };
-  </script>
+document.getElementById('save').onclick=()=>localStorage.setItem('fuelLog',JSON.stringify(log));
+document.getElementById('load').onclick=()=>{const d=localStorage.getItem('fuelLog'); if(d){log=JSON.parse(d); update();}};
+document.getElementById('clear').onclick=()=>{localStorage.removeItem('fuelLog'); log=[]; update();};
+</script>
 
 </body>
 </html>
